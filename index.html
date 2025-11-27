@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BIGUDOM STORE</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <!-- minimal Google font -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- ========== STYLES (all features use this CSS) ========== -->
+
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="logo"><h1>BIGUDOM STORE</h1></div>
+    <nav>
+      <button id="theme-toggle">🌓</button>
+      <a id="cart-link" href="cart.html">Cart (<span id="cart-count">0</span>)</a>
+      <button id="profile-btn">Profile</button>
+      <button id="logout-btn" style="display:none;">Logout</button>
+    </nav>
+  </header>
+
+  <!-- MAIN content (hidden till login) -->
+  <main id="main-content" style="display:none" class="container">
+    <div class="cols">
+      <aside class="sidebar">
+        <h3>Categories</h3>
+        <div class="categories">
+          <button class="active" data-cat="all" onclick="filterCategory('all')">All</button>
+          <button data-cat="phones" onclick="filterCategory('phones')">Phones</button>
+          <button data-cat="laptops" onclick="filterCategory('laptops')">Laptops</button>
+          <button data-cat="accessories" onclick="filterCategory('accessories')">Accessories</button>
+          <button data-cat="clothes" onclick="filterCategory('clothes')">Clothes</button>
+          <button data-cat="home" onclick="filterCategory('home')">Home</button>
+          <button data-cat="food" onclick="filterCategory('food')">Food</button>
+          <button data-cat="creams" onclick="filterCategory('creams')">Creams</button>
+        </div>
+
+        <hr style="margin:12px 0">
+        <div>
+          <h4>Account</h4>
+          <p id="sidebar-user">Not signed in</p>
+          <div id="admin-panel">
+            <h4>Admin Panel</h4>
+            <div id="admin-products-list"></div>
+
+            <h4 style="margin-top:12px">Add product</h4>
+            <form id="admin-add-product-form">
+              <input id="admin-prod-name" placeholder="Name" required />
+              <input id="admin-prod-category" placeholder="Category" required />
+              <input id="admin-prod-price" type="number" placeholder="Price" required />
+              <input id="admin-prod-stock" type="number" placeholder="Stock" required />
+              <input id="admin-prod-image" placeholder="Image URL" />
+              <button type="submit">Add</button>
+            </form>
+          </div>
+        </div>
+      </aside>
+
+      <section>
+        <div class="top-controls">
+          <input id="search-input" placeholder="Search products..." />
+          <select id="sort-select">
+            <option value="">Sort By</option>
+            <option value="price-asc">Price: Low → High</option>
+            <option value="price-desc">Price: High → Low</option>
+            <option value="name-asc">Name: A → Z</option>
+            <option value="name-desc">Name: Z → A</option>
+          </select>
+        </div>
+
+       <div id="product-container" class="product-grid"></div>
+
+      </section>
+    </div>
+  </main>
+
+  <!-- Mini Cart preview / popup -->
+  <div id="mini-cart">
+    <h4>Cart Preview</h4>
+    <div id="mini-cart-items"></div>
+    <div id="mini-cart-total" style="margin-top:8px;font-weight:700"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button id="mini-continue">Continue</button>
+      <button id="mini-view">View Cart</button>
+    </div>
+  </div>
+
+  <div id="cart-popup">Added to cart</div>
+
+  <!-- Profile overlay -->
+  <div id="profile-overlay" class="profile-overlay">
+    <div class="profile-card">
+      <span class="close" id="close-profile">&times;</span>
+      <img id="profile-pic" src="https://via.placeholder.com/90" alt="avatar">
+      <h3 id="profile-name">User</h3>
+      <p>Username: <span id="profile-username"></span></p>
+      <p>Email: <span id="profile-email"></span></p>
+      <p>Age: <span id="profile-age"></span></p>
+      <p>Role: <span id="profile-role"></span></p>
+      <button id="logout-btn-card">Logout</button>
+    </div>
+  </div>
+
+  <!-- ========== AUTH OVERLAY (shows at load) ========== -->
+  <div id="auth-overlay" class="auth-overlay" style="display:flex">
+    <div class="auth-card" id="auth-card">
+      <!-- toggles -->
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button id="show-signin" style="flex:1">Login</button>
+        <button id="show-signup" style="flex:1">Signup</button>
+      </div>
+
+      <!-- Signin -->
+      <form id="login-form" style="display:block">
+        <h2>Login</h2>
+        <input id="login-username" placeholder="Username" required />
+        <input id="login-pass" placeholder="Password" type="password" required />
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <button type="submit">Login</button>
+          <a id="forgot-link" class="link">Forgot password?</a>
+        </div>
+      </form>
+
+      <!-- Signup -->
+      <form id="signup-form" style="display:none">
+        <h2>Signup</h2>
+        <input id="signup-name" placeholder="Full name" required />
+        <input id="signup-username" placeholder="Username" required />
+        <input id="signup-age" placeholder="Age" type="number" required />
+        <input id="signup-email" placeholder="Email" type="email" required />
+        <input id="signup-pass" placeholder="Password" type="password" required />
+        <select id="signup-role">
+          <option value="buyer">Buyer</option>
+          <option value="seller">Seller</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button type="submit">Signup</button>
+      </form>
+
+      <!-- Verify -->
+      <form id="verify-form" style="display:none">
+        <h2>Verify Account</h2>
+        <p style="color:var(--muted)">We sent a 6-digit code to your email (or console in dev mode).</p>
+        <input id="verify-code" placeholder="Enter code" required />
+        <button type="submit">Verify</button>
+        <button type="button" id="resend-code">Resend</button>
+      </form>
+
+      <!-- Forgot password -->
+      <div id="forgot-area" style="display:none">
+        <h2>Reset Password</h2>
+        <form id="forgot-request-form">
+          <input id="forgot-email" placeholder="Enter account email" required />
+          <button type="submit">Send reset code</button>
+        </form>
+
+        <form id="forgot-verify-form" style="display:none">
+          <input id="forgot-code" placeholder="Enter code" required />
+          <input id="forgot-new-pass" placeholder="New password" type="password" required />
+          <button id="forgot-reset-btn">Reset password</button>
+        </form>
+        <p><a id="forgot-back" class="link">Back to login</a></p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========== SCRIPTS ========== -->
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Cart - BIGUDOM STORE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:Roboto,system-ui;background:#f6f7fb;margin:0;padding:24px;color:#111}
+    .container{max-width:900px;margin:0 auto;background:#fff;padding:18px;border-radius:12px;box-shadow:0 12px 36px rgba(2,6,23,0.06)}
+    h1{margin-top:0}
+    .cart-item{display:flex;gap:12px;align-items:center;padding:10px;border-bottom:1px solid #eef2ff}
+    .cart-item img{width:80px;height:80px;object-fit:cover;border-radius:8px}
+    .summary{margin-top:12px;display:flex;justify-content:space-between;align-items:center}
+    button{padding:8px 12px;border-radius:8px;border:0;background:#0f62fe;color:#fff;cursor:pointer}
+    .muted{color:#6b7280}
+    .qty-btn{padding:4px 8px;margin:0 4px;background:#ddd;color:#000;cursor:pointer;border-radius:6px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Your Cart</h1>
+    <div id="cart-items"></div>
+
+    <h3>Extras</h3>
+
+    <div style="margin-top:10px">
+      <label>Voucher Code:</label>
+      <input id="voucher-input" placeholder="Enter voucher">
+      <button id="apply-voucher">Apply</button>
+      <p class="muted" id="voucher-status"></p>
+    </div>
+
+    <div style="margin-top:20px">
+      <label>Payment Method:</label>
+      <select id="payment-method">
+        <option value="cod">Pay on Delivery</option>
+        <option value="card">Credit/Debit Card</option>
+        <option value="bank">Bank Transfer</option>
+        <option value="momo">Mobile Money</option>
+      </select>
+    </div>
+
+    <div class="summary">
+      <div class="muted" id="cart-count"></div>
+      <div>
+        <strong id="cart-total"></strong>
+        <button id="checkout-btn">Checkout</button>
+      </div>
+    </div>
+
+    <div style="margin-top:12px"><a href="index.html">← Continue shopping</a></div>
+  </div>
+
+<script>
+function loadFromLS(k){ try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;} }
+function saveToLS(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+
+let currentUser = loadFromLS('currentUser');
+let guestCart = loadFromLS('guestCart') || [];
+let cart = (currentUser && currentUser.cart) ? currentUser.cart : guestCart;
+
+let discountRate = 0;
+
+const cartItemsEl = document.getElementById('cart-items');
+const cartTotalEl = document.getElementById('cart-total');
+const cartCountEl = document.getElementById('cart-count');
+
+function saveCart(){
+  if(currentUser){
+    currentUser.cart = cart;
+    saveToLS('currentUser', currentUser);
+
+    const users = loadFromLS('users') || [];
+    const uidx = users.findIndex(u => u.username === currentUser.username);
+    if(uidx>=0){ users[uidx] = currentUser; saveToLS('users',users); }
+  }else{
+    saveToLS('guestCart', cart);
+  }
+}
+
+function applyDiscount(total){
+  if(discountRate <= 0) return total;
+  const discount = total * discountRate;
+  return total - discount;
+}
+
+function renderCart(){
+  cartItemsEl.innerHTML = '';
+
+  if(!cart || cart.length === 0){
+    cartItemsEl.innerHTML = '<p class="muted">Your cart is empty.</p>';
+    cartTotalEl.textContent='';
+    cartCountEl.textContent='';
+    return;
+  }
+
+  cart.forEach((it,idx)=>{
+    const row = document.createElement('div');
+    row.className = 'cart-item';
+    row.innerHTML = `
+      <img src="${it.image}" alt="${it.name}">
+      <div style="flex:1">
+        <div><strong>${it.name}</strong></div>
+        <div class="muted">$${it.price}</div>
+        <div>
+          <span class="qty-btn" data-action="sub" data-idx="${idx}">-</span>
+          Qty: ${it.qty || 1}
+          <span class="qty-btn" data-action="add" data-idx="${idx}">+</span>
+        </div>
+      </div>
+      <div>
+        <button data-idx="${idx}" class="remove">Remove</button>
+      </div>
+    `;
+    cartItemsEl.appendChild(row);
+  });
+
+  // event binding
+  document.querySelectorAll('.qty-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const a = btn.dataset.action;
+      const i = Number(btn.dataset.idx);
+
+      if(a === 'add') cart[i].qty = (cart[i].qty||1)+1;
+      if(a === 'sub' && cart[i].qty>1) cart[i].qty--;
+
+      saveCart();
+      renderCart();
+    });
+  });
+
+  document.querySelectorAll('.remove').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const id = Number(btn.dataset.idx);
+      cart.splice(id,1);
+      saveCart();
+      renderCart();
+    });
+  });
+
+
+  let total = cart.reduce((s,i)=> s + (i.price * (i.qty||1)), 0);
+
+  total = applyDiscount(total);
+
+  cartTotalEl.textContent = 'Total: $' + total.toFixed(2);
+  cartCountEl.textContent = cart.length + ' items';
+}
+
+
+
+// vouchers
+const voucherStatus = document.getElementById("voucher-status");
+document.getElementById("apply-voucher").addEventListener("click",()=>{
+   const v = document.getElementById("voucher-input").value.trim().toUpperCase();
+
+   const validCodes = {
+     "SAVE10":0.10,
+     "BIGUDOM20":0.20,
+     "WELCOME5":0.05,
+   };
+
+   if(validCodes[v]){
+      discountRate = validCodes[v];
+      voucherStatus.textContent = "Voucher applied: " + (discountRate*100)+"% off";
+   } else {
+      voucherStatus.textContent = "Invalid code";
+      discountRate = 0;
+   }
+
+   renderCart();
+});
+
+
+// checkout
+document.getElementById('checkout-btn').addEventListener('click', ()=>{
+  if(!cart || cart.length===0){
+    alert("Cart empty");
+    return;
+  }
+
+  const payMethod = document.getElementById('payment-method').value;
+
+  alert(
+    "ORDER SUCCESS!\n\nPayment Method: " 
+    + payMethod +
+    "\nItems: " + cart.length
+  );
+
+  cart=[];
+  saveCart();
+  renderCart();
+});
+
+renderCart();
+</script>
+</body>
+</html>
